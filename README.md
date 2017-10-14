@@ -81,7 +81,7 @@ If you ever want to download all the SBD messages again, perhaps on a new comput
 If you want to use the excellent HabHub Habitat Tracker to track your flight, then first you need to talk to the [UKHAS team](https://ukhas.org.uk/) on [IRC](http://webchat.freenode.net/?channels=highaltitude) and register your flight.
 Once you've done that, you can use [Iridium_9603N_Beacon_habhub_habitat_uploader.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_9603N_Beacon_habhub_habitat_uploader.py)
 to check for the download of new SBD files, parse the files and upload the data to Habitat. You will find the lines that actually upload the data to Habitat are commented out. Only uncomment them once you have registered
-you flight and are ready to upload real data.
+your flight and are ready to upload real data.
 
 ## Stitching
 
