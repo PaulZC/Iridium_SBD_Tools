@@ -88,9 +88,6 @@ if __name__ == '__main__':
                                     ukhas_str = "{},{},{},{:.2f},{:.1f},{},{},{},{}".format( \
                                         callsign, time_str, location_str, speed, heading, pressure, temperature, battery, msnum);
 
-                                    # Checksum test - comment out after testing - should produce checksum A36A
-                                    # ukhas_str = "UBSEDS18,18:34:12,160816,51.4668,-2.5802,65,7,1.85,32.8,41.4,0,0"
-
                                     # Calculate checksum
                                     crc16 = crcmod.mkCrcFun(0x11021, 0xFFFF, False, 0x0000)
                                     checksum =  "{:04X}".format(crc16(ukhas_str))

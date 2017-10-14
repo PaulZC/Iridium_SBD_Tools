@@ -102,6 +102,11 @@ That way you can be certain that each entry is unique (even if the emails arrive
 to visualise your flight around the globe without using the HabHub Tracker.
 You can alter the code to either produce a linestring which is clamped to the ground, or one which shows a 3D representation of the flight altitude. Points overlaid on top of a clamped linestring looks nice. Arrows overlaid on clamped linestring makes it obvious which way your tracker was heading.
 
+## Licence
+
+This project is distributed under a Creative Commons Attribution + Share-alike (BY-SA) licence.
+Please refer to section 5 of the licence for the “Disclaimer of Warranties and Limitation of Liability”.
+
 Enjoy!
 
 **_Paul_**
