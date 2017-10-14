@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
         couch = couchdb.Server('http://habitat.habhub.org/')
         db = couch['habitat']
-        callsign = "UBSEDS22I"
+        callsign = "<your_flight_ID>"
 
         # Build a dictionary of all existing sbd files
         sbd = {}

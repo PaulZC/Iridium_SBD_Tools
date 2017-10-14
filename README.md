@@ -69,7 +69,7 @@ IMAP4 is an out-of-date way of accessing email. GMail's preferred method is to u
 Python by following the instructions [here](https://developers.google.com/gmail/api/quickstart/python).
 
 [Iridium_SBD_GMail_API_Downloader.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_Downloader.py) does the same job as the
-IMAP downloader but using the API. As you will need _modify_ permission for your GMail mailbox, you will need to delete the gmail-python-quickstart.json
+IMAP downloader but using the API. As you will need _modify_ permission for your GMail mailbox, you will need to delete the default gmail-python-quickstart.json
 file in the .credentials directory. Then when you run the code for the first time and sign in using your browser, your client_secret.json will get
 copied across allowing modify access.
 

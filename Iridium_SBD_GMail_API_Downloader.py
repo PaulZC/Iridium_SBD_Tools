@@ -238,7 +238,7 @@ if __name__ == '__main__':
         while True:
             print('Checking for messages...')
             main()
-            for i in range(60): # 600!
+            for i in range(600):
                 time.sleep(1) # Sleep
     except KeyboardInterrupt:
         print('Ctrl-C received!')
