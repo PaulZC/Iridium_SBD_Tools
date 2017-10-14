@@ -43,16 +43,16 @@ It arrives as a .sbd file attached to an email from the Iridium system. The emai
 
 E.g.:
 
-   _From:	sbdservice@sbd.iridium.com_
-   _Sent:	20 August 2016 16:25_
-   _To:_
-   _Subject:	SBD Msg From Unit: 30043406174_
-   _Attachments:	30043406174-000029.sbd_
-   
-   _MOMSN: 29_
-   _MTMSN: 0_
-   _Time of Session (UTC): Sat Aug 20 15:24:57 2016 Session Status: 00 - Transfer OK Message Size (bytes): 61_
-   
+   _From:	sbdservice@sbd.iridium.com_  
+   _Sent:	20 August 2016 16:25_  
+   _To:_  
+   _Subject:	SBD Msg From Unit: 30043406174_  
+   _Attachments:	30043406174-000029.sbd_  
+  
+   _MOMSN: 29_  
+   _MTMSN: 0_  
+   _Time of Session (UTC): Sat Aug 20 15:24:57 2016 Session Status: 00 - Transfer OK Message Size (bytes): 61_  
+  
    _Unit Location: Lat = 55.87465 Long = -2.37135 CEPradius = 4_
 
 So, it is beneficial to download both the email text and the .sbd attachment separately.
