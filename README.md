@@ -83,6 +83,10 @@ Once you've done that, you can use [Iridium_9603N_Beacon_habhub_habitat_uploader
 to check for the download of new SBD files, parse the files and upload the data to Habitat. You will find the lines that actually upload the data to Habitat are commented out. Only uncomment them once you have registered
 your flight and are ready to upload real data.
 
+The intention is that you have Iridium_9603N_Beacon_habhub_habitat_uploader.py and Iridium_SBD_GMail_API_Downloader.py running simultaneously.
+Start Iridium_9603N_Beacon_habhub_habitat_uploader.py first and allow it to build up a dictionary of any existing .sbd files, then start Iridium_SBD_GMail_API_Downloader.py.
+When any new SBD messages arrive in your GMail inbox, they will be downloaded and then uploaded to habitat automatically.
+
 ## Stitching
 
 So far, all of the SBD messages have been downloaded individually. If you want to combine these together into (e.g.) a single linestring for Google Earth, then you need to stitch the files together.
@@ -96,6 +100,11 @@ Therefore you can’t reliably use the email arrival time to establish unique timi
 attachments from the Iridium system (which contain the actual data transmitted by the beacon itself), appends them into a single csv file and adds the session time and message sequence numbers extracted by Header_Stitcher to the start of each entry.
 That way you can be certain that each entry is unique (even if the emails arrived in the same second).
 
+## Plotting
+
+[Iridium_Stitch_Plotter_Pressure_and_Temperature.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_Stitch_Plotter_Pressure_and_Temperature.py)
+produces a very simple plot of the beacon pressure and temperature using Matplotlib.
+
 ## Converting to KML
 
 [Iridium_9603N_Beacon_to_KML.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_9603N_Beacon_to_KML.py) will convert the stitched SBD data into Google Earth linestring, points and arrows files, allowing you
@@ -103,6 +112,30 @@ to visualise your flight around the globe without using the HabHub Tracker.
 You can alter the code to either produce a linestring which is clamped to the ground, or one which shows a 3D representation of the flight altitude. Points overlaid on top of a clamped linestring looks nice. Arrows overlaid on clamped linestring makes it obvious which way your tracker was heading.
 
 ![UBSEDS22I_GoogleEarthLinestring_3a.jpg](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/img/UBSEDS22I_GoogleEarthLinestring_3a.jpg)
+
+## Linux Python 2.7 Libraries
+
+To get the tools to run successfully under Linux, e.g. on Raspberry Pi, you will need to install the following:
+
+### GMail API
+
+- pip install --upgrade google-api-python-client
+
+### Matplotlib
+
+- sudo apt-get install python-matplotlib
+
+### CouchDB
+
+- pip install couchdb
+
+### CRCMOD
+
+- pip install crcmod
+
+### SimpleKML
+
+- pip install simplekml
 
 ## Licence
 
