@@ -137,10 +137,9 @@ To get the tools to run successfully under Linux, e.g. on Raspberry Pi, you will
 
 - pip install simplekml
 
-## Licence
+### Licence
 
-This project is distributed under a Creative Commons Attribution + Share-alike (BY-SA) licence.
-Please refer to section 5 of the licence for the “Disclaimer of Warranties and Limitation of Liability”.
+This project is distributed under a [GNU GENERAL PUBLIC LICENSE](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/LICENSE.md)
 
 Enjoy!
 
