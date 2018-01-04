@@ -8,7 +8,7 @@ This is a collection of Python software tools which I wrote to download, process
 
 If you purchase an Iridium 9603N module for your tracker project, your provider will offer you the option of receiving the data messages via email or a web service (HTTP).
 Personally I prefer email. So, here are a somewhat random collection of software tools which will automatically download the SBD data email attachments from GMail, parse them, upload data to the [HabHub Habitat Tracker](https://tracker.habhub.org),
-and visualise the path of your tracker via Google Earth KML files.
+forward them to another email address (with a Google Static Maps API link) and visualise the path of your tracker via Google Earth KML files.
 
 ## Downloading the SBD emails and attachments
 
@@ -75,6 +75,21 @@ copied across allowing modify access.
 
 If you ever want to download all the SBD messages again, perhaps on a new computer, then
 [Iridium_SBD_GMail_API_GetAllSBD.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_GetAllSBD.py) will do just that.
+
+## Forwarding Emails with Google Static Maps API Links
+
+[Iridium_SBD_GMail_API_Forwarder.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_Forwarder.py) uses the GMail API to forward the contents of
+an Iridium SBD message to another email address. It will check once per minute for the appearance of a new .sbd file, parse it, convert the contents
+to a more user-friendly (html) format and then forward it as a new email message to the chosen recipient.
+
+The beacon location in the .sbd message is converted into a link to the Google Static Maps API. This API is a great way to show a map image of where the beacon is located and the
+path that it has followed. You can find more details about the API [here](https://developers.google.com/maps/documentation/static-maps/intro). To use the API, you will need to create
+your own API Key, which you can do by following the instructions [here](https://developers.google.com/maps/documentation/static-maps/get-api-key). Copy the Key and save it in a file
+called _Google_Static_Maps_API_Key.txt_ so the forwarder can read it.
+
+The intention is that you have Iridium_SBD_GMail_API_Forwarder.py and Iridium_SBD_GMail_API_Downloader.py running simultaneously.
+Start Iridium_SBD_GMail_API_Forwarder.py first and allow it to build up a dictionary of any existing .sbd files, then start Iridium_SBD_GMail_API_Downloader.py.
+When any new SBD messages arrive in your GMail inbox, they will be downloaded and then forwarded automatically.
 
 ## Uploading data to the [HabHub Habitat Tracker Server](https://tracker.habhub.org)
 
