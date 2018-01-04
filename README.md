@@ -76,13 +76,13 @@ copied across allowing modify access.
 If you ever want to download all the SBD messages again, perhaps on a new computer, then
 [Iridium_SBD_GMail_API_GetAllSBD.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_GetAllSBD.py) will do just that.
 
-## Forwarding Emails with Google Static Maps API Links
+## Forwarding emails with Google Static Maps API links
 
 [Iridium_SBD_GMail_API_Forwarder.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_Forwarder.py) uses the GMail API to forward the contents of
 an Iridium SBD message to another email address. It will check once per minute for the appearance of a new .sbd file, parse it, convert the contents
 to a more user-friendly (html) format and then forward it as a new email message to the chosen recipient.
 
-The beacon location in the .sbd message is converted into a link to the Google Static Maps API. This API is a great way to show a map image of where the beacon is located and the
+The beacon location in the .sbd message is converted into a link for the Google Static Maps API. This API is a great way to show a map image of where the beacon is located and the
 path that it has followed. You can find more details about the API [here](https://developers.google.com/maps/documentation/static-maps/intro). To use the API, you will need to create
 your own API Key, which you can do by following the instructions [here](https://developers.google.com/maps/documentation/static-maps/get-api-key). Copy the Key and save it in a file
 called _Google_Static_Maps_API_Key.txt_ so the forwarder can read it.
