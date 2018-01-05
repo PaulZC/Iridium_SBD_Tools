@@ -1,6 +1,6 @@
 # Iridium SBD GMail Downloader using the GMail API
 
-# Logs into GMail using the API, checks for Iridium SBD messages every 10 minutes,
+# Logs into GMail using the API, checks for Iridium SBD messages every minute,
 # saves the message and attachment to file, and moves the message out of the inbox
 
 # Follow these instructions to create your credentials:
@@ -228,17 +228,17 @@ def main():
             SaveAttachments(service, 'me', message["id"])
             MarkAsRead(service, 'me', message["id"])
             MoveToLabel(service, 'me', message["id"], 'SBD')
-    else:
-        print('No messages found!')
+    #else:
+        #print('No messages found!')
 
 if __name__ == '__main__':
     print('Iridium SBD GMail API Downloader')
     print('Press Ctrl-C to quit')
     try:
         while True:
-            print('Checking for messages...')
+            #print('Checking for messages...')
             main()
-            for i in range(600):
+            for i in range(60):
                 time.sleep(1) # Sleep
     except KeyboardInterrupt:
         print('Ctrl-C received!')

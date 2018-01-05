@@ -2,13 +2,16 @@
 
 A somewhat random collection of Python software tools to help Iridium SBD tracker projects like the [Iridium 9603N Beacon](https://github.com/PaulZC/Iridium_9603_Beacon).
 
+![Mapper.jpg](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/img/Mapper.jpg)
+
 ## Background
 
 This is a collection of Python software tools which I wrote to download, process, upload and visualise Short Burst Data messages from the [UBSEDS22I Iridium Tracker](https://github.com/PaulZC/Iridium_9603_Beacon/blob/master/Archive/V2/Iridium_9603_Beacon.pdf).
 
 If you purchase an Iridium 9603N module for your tracker project, your provider will offer you the option of receiving the data messages via email or a web service (HTTP).
-Personally I prefer email. So, here are a somewhat random collection of software tools which will automatically download the SBD data email attachments from GMail, parse them, upload data to the [HabHub Habitat Tracker](https://tracker.habhub.org),
-forward them to another email address (with a Google Static Maps API link) and visualise the path of your tracker via Google Earth KML files.
+Personally I prefer email. So, here are a somewhat random collection of software tools which will automatically download the SBD data email attachments from GMail, parse them,
+display the tracker location and path using the Google Static Maps API, upload data to the [HabHub Habitat Tracker](https://tracker.habhub.org),
+forward the data to another email address (with a Google Static Maps API link) and visualise the path of your tracker via Google Earth KML files.
 
 ## Downloading the SBD emails and attachments
 
@@ -61,7 +64,7 @@ If you have your SBD messages sent to a GMail address, you can use IMAP4 to down
 to allow IMAP access and [enable less secure apps](https://support.google.com/accounts/answer/6010255?hl=en)
 
 [Iridium_SBD_GMail_IMAP_Downloader.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_IMAP_Downloader.py)
-will check your inbox every 10 minutes for a new message from the Iridium system (with the subject: _SBD Msg From Unit_).
+will check your inbox once per minute for a new message from the Iridium system (with the subject: _SBD Msg From Unit_).
 If it finds one it will download the email text, download the email attachment, mark the message as seen (read) and
 'move' it to a folder called SBD by changing the message labels. You will need to manually create the SBD folder in GMail before running the code.
 
@@ -75,6 +78,41 @@ copied across allowing modify access.
 
 If you ever want to download all the SBD messages again, perhaps on a new computer, then
 [Iridium_SBD_GMail_API_GetAllSBD.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_GetAllSBD.py) will do just that.
+
+## Mapping the location and path with the Google Static Maps API
+
+[Iridium_9603N_Beacon_Mapper.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_9603N_Beacon_Mapper.py) uses the Google Static Maps API to display the beacon location and path.
+It will check once per minute for the appearance of a new .sbd file, parse it and display the data in a Python Tkinter GUI.
+
+You will need to download the [blank map image](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/map_image_blank.png) too. This is displayed until an sbd file is processed
+or whenever the GUI isn't able to download map images from the API.
+
+You can find more details about the API [here](https://developers.google.com/maps/documentation/static-maps/intro). To use the API, you will need to create
+your own API Key, which you can do by following the instructions [here](https://developers.google.com/maps/documentation/static-maps/get-api-key). Copy the Key and save it in a file
+called _Google_Static_Maps_API_Key.txt_ so the mapper can read it.
+
+The intention is that you have Iridium_9603N_Beacon_Mapper.py and Iridium_SBD_GMail_API_Downloader.py running simultaneously.
+Start Iridium_9603N_Beacon_Mapper.py first and allow it to build up a dictionary of any existing .sbd files, then start Iridium_SBD_GMail_API_Downloader.py.
+When any new SBD messages arrive in your GMail inbox, they will be downloaded and then added to the map automatically.
+
+If you want to test the mapper on its own, download the two example .sbd files
+[18-01-01_01-00-00_123456789012345_000001.sbd](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/18-01-01_01-00-00_123456789012345_000001.sbd)
+and
+[18-01-01_01-00-01_123456789012345_000002.sbd](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/18-01-01_01-00-00_123456789012345_000001.sbd)
+. When the code asks if you want to ignore any existing sbd files, answer 'n' and the data in these files will be displayed.
+
+The displayed map is automatically centered on the beacon position, but the center position can be changed by left-clicking in the image.
+A right-click will copy that location (lat,lon) to the clipboard. The zoom level defaults to '15' but can be changed using the zoom buttons.
+
+The beacon's path is displayed as a red line on the map. The oldest waypoints may not be shown as the map URL is limited to 8192 characters.
+
+The GUI uses 640x480 pixel map images. Higher resolution images are available if you have a premium plan with Google.
+
+The GUI can currently only handle data from a single beacon. A future upgrade will be to add support for multiple beacons.
+
+![Mapper.jpg](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/img/Mapper.jpg)
+
+The GUI has been tested with Python 2.7 on 64-bit Windows and on Linux on Raspberry Pi. You will need to install the Python libraries [listed below](https://github.com/PaulZC/Iridium_SBD_Tools#linux-python-27-libraries).
 
 ## Forwarding emails with Google Static Maps API links
 
@@ -136,6 +174,10 @@ To get the tools to run successfully under Linux, e.g. on Raspberry Pi, you will
 
 - pip install --upgrade google-api-python-client
 
+### PIL ImageTk
+
+- sudo apt-get install python-pil.imagetk
+
 ### Matplotlib
 
 - sudo apt-get install python-matplotlib
@@ -152,7 +194,7 @@ To get the tools to run successfully under Linux, e.g. on Raspberry Pi, you will
 
 - pip install simplekml
 
-### Licence
+## Licence
 
 This project is distributed under a [GNU GENERAL PUBLIC LICENSE](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/LICENSE.md)
 

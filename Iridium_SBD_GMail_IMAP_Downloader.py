@@ -1,6 +1,6 @@
 # Iridium SBD GMail Downloader using IMAP
 
-# Logs into GMail using IMAP4, checks for Iridium SBD messages every 10 minutes,
+# Logs into GMail using IMAP4, checks for Iridium SBD messages every minute,
 # saves the message and attachment to file, and moves the message out of the inbox
 
 # You need to enable IMAP in your GMail settings (Forwarding and POP/IMAP) and enable less secure apps:
@@ -31,7 +31,7 @@ try:
         m.login(user,pwd)
         m.select("Inbox")
 
-        print 'Searching for messages:',search_str
+        #print 'Searching for messages:',search_str
         resp, items = m.search(None, search_str) 
         items = items[0].split() # get the mail ids
 
@@ -93,8 +93,8 @@ try:
             m.store(emailid, '+FLAGS', '(\Deleted)')
             m.expunge()
 
-        for i in range(600):
-            time.sleep(1) # Sleep for 10 mins
+        for i in range(60):
+            time.sleep(1) # Sleep for 1 min
 
 except KeyboardInterrupt:
     print 'Ctrl-C received!'
