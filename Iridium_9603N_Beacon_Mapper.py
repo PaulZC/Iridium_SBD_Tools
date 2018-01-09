@@ -4,7 +4,7 @@
 
 ## Written by Paul Clark: Jan 2018.
 
-## Builds a dictionary of all existing sbd files.
+## Builds a list of all existing sbd files.
 ## Once per minute, checks for the appearance of a new sbd file.
 ## When one is found, parses the file and displays the beacon position and route
 ## using the Google Static Maps API.
@@ -14,17 +14,16 @@
 ## Copy and paste it into a file called Google_Static_Maps_API_Key.txt
 
 ## The software makes extensive use of the Google Static Map API.
-## The displayed map is automatically centered on the beacon position, but the center position can be
-## changed by left-clicking in the image.
-## A right-click will copy that location (lat,lon) to the clipboard.
-## The zoom level defaults to '15' but can be changed using the zoom buttons.
+## The displayed map is automatically centered on a new beacon position.
+## The center position can be changed by left-clicking in the image.
+## A right-click will copy the click location (lat,lon) to the clipboard.
+## The zoom level is set automatically when a new beacon is displayed to show both beacon and base.
+## The zoom can be changed using the buttons.
 
-## The beacon's path is displayed as a red line on the map.
-## The oldest waypoints may not be shown as the map URL is limited to 8192 characters.
+## Each beacon's path is displayed as a coloured line on the map.
+## The oldest waypoints may be deleted as the map URL is limited to 8192 characters.
 
 ## The GUI uses 640x480 pixel map images. Higher resolution images are available if you have a premium plan with Google.
-
-## This code can currently only handle data from a single beacon. A future upgrade will be to add support for multiple beacons.
 
 # sbd file contains:
 # Column 0 = GPS Tx Time (YYYYMMDDHHMMSS) (Start of 9603 Tx session)
@@ -64,17 +63,30 @@ class BeaconMapper(object):
       print
 
       # Default values
+      self._job = None # Keep track of timer calls
       self.zoom = '15' # Default Google Maps zoom (text)
       self.default_interval = 60 # Default update interval (secs)
-      self.last_update_at = time.time() # Last time an update was requested
-      self.next_update_at = self.last_update_at + 1 # Do first update after this many seconds
-      self.path = '' # Beacon path for Static Map
       self.sep_width = 304 # Separator width in pixels
       self.map_lat = 0.0 # Map latitude (degrees)
       self.map_lon = 0.0 # Map longitude (degrees)
       self.frame_height = 480 # Google Static Map window width
       self.frame_width = 640 # Google Static Map window height
-      self.enable_clicks = False # Are mouse clicks enabled? False until first map has been loaded      
+      self.delta_limit_pixels = 200 # If base to beacon angle (delta) exceeds this many pixels, decrease the zoom level accordingly
+      self.map_type = 'hybrid' # Maps can be: roadmap , satellite , terrain or hybrid
+      self.enable_clicks = False # Are mouse clicks enabled? False until first map has been loaded
+      self.beacons = 0 # How many beacons are currently being tracked
+      self.max_beacons = 8 # Track up to this many beacons
+      self.beacon_imeis = {} # Dictionary of the serial numbers of the beacons currently being tracked
+      self.beacon_paths = [] # List of beacon paths for Static Map
+      self.beacon_locations = [] # List of current location for each beacon
+      self.beacon_colours = ['red','yellow','green','blue','purple','gray','brown','orange'] # Colours for beacon markers and paths
+      self.sbd = [] # List of existing sbd filenames
+      
+      # Limit path lengths to this many characters depending on how many beacons are being tracked
+      # (Google allows combined URLs of up to 8192 characters)
+      # The first entry is redundant (i.e. would be used when tracking zero beacons)
+      # These limits take into account that each pipe ('|') is expanded to '%7C' by urllib
+      self.max_path_lengths = [7000, 7000, 3400, 2200, 1600, 1300, 1050, 900, 780]
 
       # Google static map API pixel scales to help with map moves
       # https://gis.stackexchange.com/questions/7430/what-ratio-scales-do-google-maps-zoom-levels-correspond-to
@@ -129,8 +141,7 @@ class BeaconMapper(object):
          ignore_old_files = 'Y'
       if (ignore_old_files == 'y'): ignore_old_files = 'Y'
 
-      # Build a dictionary of all existing sbd files
-      self.sbd = {}
+      # Build a list of all existing sbd files
       for root, dirs, files in os.walk("."):
          if len(files) > 0:
             #if root != ".": # Ignore files in this directory - only process subdirectories
@@ -138,8 +149,7 @@ class BeaconMapper(object):
                for filename in files:
                   if filename[-4:] == '.sbd': # check for sbd file suffix
                      longfilename = os.path.join(root, filename)
-                     msnum = int(longfilename[-10:-4]) # extract the message sequence number
-                     if (ignore_old_files == 'Y'): self.sbd[msnum] = longfilename # add the msn and filename to the dictionary
+                     if (ignore_old_files == 'Y'): self.sbd.append(longfilename) # add the filename to the list
       print 'Ignoring',len(self.sbd),'existing sbd files'
       print
 
@@ -185,7 +195,7 @@ class BeaconMapper(object):
       self.interval.grid(row=row, column=1) # Assign its position
       self.interval.delete(0, tk.END) # Delete any existing text (redundant?)
       self.interval.insert(0, str(self.default_interval)) # Insert default value
-      self.interval.config(justify=tk.CENTER,width=22,state='readonly') # Configure and make readonly
+      self.interval.config(justify=tk.CENTER,width=22) # Configure
       self.interval_txt = tk.Label(self.toolFrame, text = 'Update interval (s)',width=20) # Create text label
       self.interval_txt.grid(row=row, column=0) # Assign its position
       row += 1
@@ -205,11 +215,19 @@ class BeaconMapper(object):
       self.sep_1.grid(row=row, columnspan=2)
       row += 1
 
+      # Beacon imei
+      self.beacon_imei = tk.Entry(self.toolFrame)
+      self.beacon_imei.grid(row=row, column=1)
+      self.beacon_imei.delete(0, tk.END)
+      self.beacon_imei.config(justify=tk.CENTER,width=22,state='readonly')
+      self.beacon_imei_txt = tk.Label(self.toolFrame, text = 'Beacon IMEI',width=20)
+      self.beacon_imei_txt.grid(row=row, column=0)
+      row += 1
+
       # Beacon time
       self.beacon_time = tk.Entry(self.toolFrame)
       self.beacon_time.grid(row=row, column=1)
       self.beacon_time.delete(0, tk.END)
-      self.beacon_time.insert(0, '00:00:00')
       self.beacon_time.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_time_txt = tk.Label(self.toolFrame, text = 'Beacon time',width=20)
       self.beacon_time_txt.grid(row=row, column=0)
@@ -219,19 +237,15 @@ class BeaconMapper(object):
       self.beacon_location = tk.Entry(self.toolFrame)
       self.beacon_location.grid(row=row, column=1)
       self.beacon_location.delete(0, tk.END)
-      center = ("%.6f"%self.map_lat) + ',' + ("%.6f"%self.map_lon)
-      self.beacon_location.insert(0, center)
       self.beacon_location.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_location_txt = tk.Label(self.toolFrame, text = 'Beacon location',width=20)
       self.beacon_location_txt.grid(row=row, column=0)
-      self.beacon_location_txt.config(background='#FF6666')
       row += 1
 
       # Beacon altitude
       self.beacon_altitude = tk.Entry(self.toolFrame)
       self.beacon_altitude.grid(row=row, column=1)
       self.beacon_altitude.delete(0, tk.END)
-      self.beacon_altitude.insert(0, '0')
       self.beacon_altitude.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_altitude_txt = tk.Label(self.toolFrame, text = 'Beacon altitude (m)',width=20)
       self.beacon_altitude_txt.grid(row=row, column=0)
@@ -241,7 +255,6 @@ class BeaconMapper(object):
       self.beacon_speed = tk.Entry(self.toolFrame)
       self.beacon_speed.grid(row=row, column=1)
       self.beacon_speed.delete(0, tk.END)
-      self.beacon_speed.insert(0, '0.0')
       self.beacon_speed.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_speed_txt = tk.Label(self.toolFrame, text = 'Beacon speed (m/s)',width=20)
       self.beacon_speed_txt.grid(row=row, column=0)
@@ -251,7 +264,6 @@ class BeaconMapper(object):
       self.beacon_heading = tk.Entry(self.toolFrame)
       self.beacon_heading.grid(row=row, column=1)
       self.beacon_heading.delete(0, tk.END)
-      self.beacon_heading.insert(0, '0')
       self.beacon_heading.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_heading_txt = tk.Label(self.toolFrame, text = ("Beacon track ("+u"\u00b0"+")"),width=20)
       self.beacon_heading_txt.grid(row=row, column=0)
@@ -261,7 +273,6 @@ class BeaconMapper(object):
       self.beacon_pressure = tk.Entry(self.toolFrame)
       self.beacon_pressure.grid(row=row, column=1)
       self.beacon_pressure.delete(0, tk.END)
-      self.beacon_pressure.insert(0, '00000')
       self.beacon_pressure.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_pressure_txt = tk.Label(self.toolFrame, text = 'Beacon pressure (Pa)',width=20)
       self.beacon_pressure_txt.grid(row=row, column=0)
@@ -271,7 +282,6 @@ class BeaconMapper(object):
       self.beacon_temperature = tk.Entry(self.toolFrame)
       self.beacon_temperature.grid(row=row, column=1)
       self.beacon_temperature.delete(0, tk.END)
-      self.beacon_temperature.insert(0, '0.0')
       self.beacon_temperature.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_temperature_txt = tk.Label(self.toolFrame, text = ("Beacon temperature ("+u"\u2103"+")"),width=20)
       self.beacon_temperature_txt.grid(row=row, column=0)
@@ -281,10 +291,18 @@ class BeaconMapper(object):
       self.beacon_voltage = tk.Entry(self.toolFrame)
       self.beacon_voltage.grid(row=row, column=1)
       self.beacon_voltage.delete(0, tk.END)
-      self.beacon_voltage.insert(0, '0.0')
       self.beacon_voltage.config(justify=tk.CENTER,width=22,state='readonly')
       self.beacon_voltage_txt = tk.Label(self.toolFrame, text = 'Beacon voltage (V)',width=20)
       self.beacon_voltage_txt.grid(row=row, column=0)
+      row += 1
+
+      # Beacon MSN
+      self.beacon_msn = tk.Entry(self.toolFrame)
+      self.beacon_msn.grid(row=row, column=1)
+      self.beacon_msn.delete(0, tk.END)
+      self.beacon_msn.config(justify=tk.CENTER,width=22,state='readonly')
+      self.beacon_msn_txt = tk.Label(self.toolFrame, text = 'Beacon MOMSN',width=20)
+      self.beacon_msn_txt.grid(row=row, column=0)
       row += 1
 
       # Separator
@@ -301,21 +319,27 @@ class BeaconMapper(object):
       self.quit_button = tk.Button(self.toolFrame, text="Quit", font=self.boldFont, width=20, height=2, command=self.QUIT)
       self.quit_button.grid(row=row,column=1,rowspan=2)
 
+      # Menu to list current beacon locations
+      self.menubar = tk.Menu(self.window)
+      self.beacon_menu = tk.Menu(self.menubar, tearoff=0)
+      self.menubar.add_cascade(label="Beacon Locations", menu=self.beacon_menu)
+      self.window.config(menu=self.menubar)
+
+      # Set up next update
+      self.last_update_at = time.time() # Last time an update was requested
+      self.next_update_at = self.last_update_at #+ self.default_interval # Do first update after this many seconds
+
       # Timer
-      self.window.after(0,self.timer)
+      self.window.after(2000,self.timer) # First timer event after 2 secs
 
       # Start GUI
       self.window.mainloop()
 
    def timer(self):
       ''' Timer function - calls itself repeatedly to schedule map updates '''
-      do_update = False # Is it time to do an update?
+      do_update = False # Initialise is it time to do an update?
       now = time.time() # Get the current time
       self.time_since_last_update.configure(state='normal') # Unlock entry box
-      try: # Try and read the update interval
-         interval = float(self.interval.get())
-      except:
-         raise ValueError('Invalid Interval!')
       time_since_last_update = now - self.last_update_at # Calculate interval since last update
       self.time_since_last_update.delete(0, tk.END) # Delete existing value
       if (now < self.next_update_at): # Is it time for the next update?
@@ -323,6 +347,15 @@ class BeaconMapper(object):
          self.time_since_last_update.insert(0, str(int(time_since_last_update)))
       else:
          # If it is time for an update: reset time since last update; set time for next update
+         try: # Try and read the update interval
+            interval = float(self.interval.get())
+         except:
+            #self.interval.configure(state='normal') # Unlock entry box
+            self.interval.delete(0, tk.END) # Delete any existing text
+            self.interval.insert(0, str(self.default_interval)) # Insert default value
+            interval = self.default_interval
+            #self.interval.configure(state='readonly') # Lock entry box
+            #raise ValueError('Invalid Interval!')
          self.time_since_last_update.insert(0, '0') # Reset time since last update
          self.last_update_at = self.next_update_at # Update time of last update
          self.next_update_at = self.next_update_at + interval # Set time for next update
@@ -332,57 +365,164 @@ class BeaconMapper(object):
       if do_update: # If it is time to do an update
          if self.check_for_files(): # Check for new SBD files
             self.update_map() # Update the Google Static Maps image
-      
-      self.window.after(250, self.timer) # Schedule another timer event in 0.25s
 
+      self._job = self.window.after(250, self.timer) # Schedule another timer event in 0.25s
+
+   def check_for_files(self):
+      ''' Check for the appearance of any new SBD files and parse them '''
+      new_files = False # Found any new files?
+      # Identify all the sbd files again 
+      for root, dirs, files in os.walk("."):
+         if len(files) > 0:
+            #if root != ".": # Ignore files in this directory - only process subdirectories
+            #if root == ".": # Ignore subdirectories - only process this directory
+               for filename in files:
+                  if filename[-4:] == '.sbd':
+                     longfilename = os.path.join(root, filename)
+                     msnum = longfilename[-10:-4]
+                     imei = longfilename[-26:-11]
+
+                     # Check if this file is in the list
+                     # If it isn't then this must be a new sbd file so process it
+                     try:
+                        index = self.sbd.index(longfilename)
+                     except:
+                        index = -1
+                     if index == -1:
+                        print 'Found new sbd file from beacon IMEI',imei,'with MOMSN',msnum
+                        new_files = True
+                        self.sbd.append(longfilename) # Add new filename to list
+
+                        # Read the sbd file and unpack the data using numpy loadtxt
+                        gpstime,latitude,longitude,altitude,speed,heading,pressure,temperature,battery = \
+                            np.loadtxt(longfilename, delimiter=',', unpack=True, \
+                            usecols=(0,1,2,3,4,5,8,9,10), converters={0:mdates.strpdate2num('%Y%m%d%H%M%S')})
+
+                        pressure = int(round(pressure)) # Convert pressure to integer
+                        altitude = int(round(altitude)) # Convert altitude to integer
+                        time_str = mdates.num2date(gpstime).strftime('%H:%M:%S') # Construct time
+                        position_str = "{:.6f},{:.6f}".format(latitude, longitude) # Construct position
+
+                        # Check if this new file is from a beacon imei we haven't seen before
+                        if self.beacon_imeis.has_key(imei):
+                           pass # We have seen this one before
+                        else:
+                           # This is a new beacon
+                           # Check that we haven't reached the maximum number of beacons
+                           if self.beacons < self.max_beacons:
+                              # Maximum hasn't been reached so get things ready for this new beacon
+                              self.beacon_imeis[imei] = self.beacons # Add this imei and its beacon number
+                              self.beacon_paths.append('&path=color:'+self.beacon_colours[self.beacons]+'|weight:5') # Append an empty path for this beacon
+                              self.beacon_locations.append('') # Append a NULL location for this beacon
+                              self.beacons += 1 # Increment the number of beacons being tracked
+                              # This is a new beacon so center map on its location this time only
+                              self.map_lat = latitude
+                              self.map_lon = longitude
+                              # Add it to the Beacon Location menu
+                              # https://stackoverflow.com/q/7542164
+                              self.beacon_menu.add_command(label=imei,command=lambda imei=imei: self.copy_location(imei))
+                           else:
+                              # Return now - maximum has been reached - don't process data from this beacon
+                              return False
+
+                        # Update beacon location
+                        self.beacon_locations[self.beacon_imeis[imei]] = position_str # Update location for this beacon
+
+                        # Change beacon location background colour
+                        self.beacon_location_txt.config(background=self.beacon_colours[self.beacon_imeis[imei]])
+                        
+                        # Update beacon path (append this location to the path for this beacon)
+                        self.beacon_paths[self.beacon_imeis[imei]] += '|' + position_str
+                        
+                        # Check path length hasn't exceeded the maximum
+                        def find_char(s, ch): # https://stackoverflow.com/a/11122355
+                           return [i for i, ltr in enumerate(s) if ltr == ch]
+                        while len(self.beacon_paths[self.beacon_imeis[imei]]) > self.max_path_lengths[self.beacons]:
+                           # Delete path from second to third pipe character ('|') (first '|' preceeds the line weight)
+                           pipes = find_char(self.beacon_paths[self.beacon_imeis[imei]],'|')
+                           self.beacon_paths[self.beacon_imeis[imei]] = self.beacon_paths[self.beacon_imeis[imei]][:pipes[1]] + self.beacon_paths[self.beacon_imeis[imei]][pipes[2]:]
+                           
+                        # Update imei
+                        self.beacon_imei.config(state='normal') # Unlock beacon_imei
+                        self.beacon_imei.delete(0, tk.END) # Delete old value
+                        self.beacon_imei.insert(0, imei) # Insert new imei
+                        self.beacon_imei.config(state='readonly') # Lock beacon_imei
+                        # Update beacon time
+                        self.beacon_time.config(state='normal') # Unlock beacon_time
+                        self.beacon_time.delete(0, tk.END) # Delete old value
+                        self.beacon_time.insert(0, time_str) # Insert new time
+                        self.beacon_time.config(state='readonly') # Lock beacon_time
+                        # Update beacon location
+                        self.beacon_location.config(state='normal')
+                        self.beacon_location.delete(0, tk.END)
+                        self.beacon_location.insert(0, position_str)
+                        self.beacon_location.config(state='readonly')
+                        # Update beacon_altitude
+                        self.beacon_altitude.config(state='normal')
+                        self.beacon_altitude.delete(0, tk.END)
+                        self.beacon_altitude.insert(0, str(altitude))
+                        self.beacon_altitude.config(state='readonly')
+                        # Update beacon_speed
+                        self.beacon_speed.config(state='normal')
+                        self.beacon_speed.delete(0, tk.END)
+                        self.beacon_speed.insert(0, str(speed))
+                        self.beacon_speed.config(state='readonly')
+                        # Update beacon_heading
+                        self.beacon_heading.config(state='normal')
+                        self.beacon_heading.delete(0, tk.END)
+                        self.beacon_heading.insert(0, str(heading))
+                        self.beacon_heading.config(state='readonly')
+                        # Update beacon_pressure
+                        self.beacon_pressure.config(state='normal')
+                        self.beacon_pressure.delete(0, tk.END)
+                        self.beacon_pressure.insert(0, str(pressure))
+                        self.beacon_pressure.config(state='readonly')
+                        # Update beacon_temperature
+                        self.beacon_temperature.config(state='normal')
+                        self.beacon_temperature.delete(0, tk.END)
+                        self.beacon_temperature.insert(0, str(temperature))
+                        self.beacon_temperature.config(state='readonly')
+                        # Update beacon_voltage
+                        self.beacon_voltage.config(state='normal')
+                        self.beacon_voltage.delete(0, tk.END)
+                        self.beacon_voltage.insert(0, str(battery))
+                        self.beacon_voltage.config(state='readonly')
+                        # Update beacon_msn
+                        self.beacon_msn.config(state='normal')
+                        self.beacon_msn.delete(0, tk.END)
+                        self.beacon_msn.insert(0, msnum)
+                        self.beacon_msn.config(state='readonly')
+                        # Update Beacon Location menu
+                        label_str = imei + ' : ' + position_str
+                        self.beacon_menu.entryconfig(self.beacon_imeis[imei], label=label_str, background=self.beacon_colours[self.beacon_imeis[imei]])
+      return new_files
+   
    def update_map(self):
-      ''' Show beacon_location and the beacon route using Google Maps API StaticMap '''
-      
+      ''' Show beacon locations and the beacon routes using Google Maps API StaticMap '''
+
       # Assemble map center
       center = ("%.6f"%self.map_lat) + ',' + ("%.6f"%self.map_lon)
 
-      # Get marker locations
-      try:
-         red = str(self.beacon_location.get()) # Put a red marker at the beacon location
-      except:
-         raise ValueError('Incorrect Beacon_Location!')
-
-      def assemble_url(self, center, red):
-         ''' Assemble the URL for the Google StaticMap API '''
-         # Update the Google Maps API StaticMap URL
-         # Centered on center position
-         # Use red marker to show beacon position
-         # Show the beacon path in red
-         self.path_url = "https://maps.googleapis.com/maps/api/staticmap?center="
-         self.path_url += center
-         self.path_url += "&markers=color:red|"
-         self.path_url += red
-         if self.path != '':
-            self.path_url += "&path=color:red|weight:5"
-            self.path_url += self.path
-         self.path_url += "&zoom="
-         self.path_url += self.zoom
-         self.path_url += "&size="
-         self.path_url += str(self.frame_width)
-         self.path_url += "x"
-         self.path_url += str(self.frame_height)
-         self.path_url += "&maptype=hybrid&format=png&key="
-         self.path_url += self.key
-
-      # Assemble URL - check it for length, truncate if necessary
-      assemble_url(self,center,red)
-      while len(self.path_url) > 8192: # Google allows URLs of up to 8192 characters
-         self.path = self.path[1:] # Truncate path: delete first '|'
-         self.path = self.path[(self.path.find('|')):] # Delete up to next '|'
-         assemble_url(self,center,red)
-
-      # Update the URL for Google Maps
-      self.map_url = "https://www.google.com/maps/search/?api=1&map_action=map&query="
-      self.map_url += red
-
-      # Copy the Google Maps URL to the clipboard so it can be pasted into a browser
-      #self.window.clipboard_clear()
-      #self.window.clipboard_append(self.map_url)
+      # Update the Google Maps API StaticMap URL
+      self.path_url = 'https://maps.googleapis.com/maps/api/staticmap?center=' # 54 chars
+      self.path_url += center # 22 chars
+      if self.beacons > 0: # Do we have any valid beacons?
+         for beacon in range(self.beacons):
+            self.path_url += '&markers=color:' + self.beacon_colours[beacon] + '|' # beacons*(15+6+3+22) chars
+            self.path_url += self.beacon_locations[beacon]
+         # Path 'header' is 29 chars
+         # Minimum length for each waypoint is 18 chars but will grow to 20 when pipe is expanded
+         # This needs to be included in the max_path_length
+         for beacon in range(self.beacons): 
+            self.path_url += self.beacon_paths[beacon]
+      self.path_url += '&zoom=' # 8 chars
+      self.path_url += self.zoom
+      self.path_url += '&size=' # 13 chars
+      self.path_url += str(self.frame_width)
+      self.path_url += 'x'
+      self.path_url += str(self.frame_height)
+      self.path_url += '&maptype=' + self.map_type + '&format=png&key=' # 35 chars
+      self.path_url += self.key # 40 chars
 
       # Download the API map image from Google
       filename = "map_image.png" # Download map to this file
@@ -401,7 +541,11 @@ class BeaconMapper(object):
       if filename == "map_image.png":
          self.zoom_in_button.config(state='normal') # Enable zoom+
          self.zoom_out_button.config(state='normal') # Enable zoom-
-         self.enable_clicks = True # Enabled mouse clicks
+         self.enable_clicks = True # Enable mouse clicks
+      else: # Else disable them again
+         self.zoom_in_button.config(state='disabled') # Disable zoom+
+         self.zoom_out_button.config(state='disabled') # Disable zoom-
+         self.enable_clicks = False # Disable mouse clicks
 
       # Update window
       self.window.update()
@@ -450,81 +594,12 @@ class BeaconMapper(object):
             self.window.clipboard_append(loc) # Copy location to clipboard
             self.window.update() # Update window
 
-   def check_for_files(self):
-      ''' Check for the appearance of any new SBD files and parse them '''
-      new_files = False # Found any new files?
-      # Identify all the sbd files again 
-      for root, dirs, files in os.walk("."):
-          if len(files) > 0:
-              #if root != ".": # Ignore files in this directory - only process subdirectories
-              #if root == ".": # Ignore subdirectories - only process this directory
-                  for filename in files:
-                      if filename[-4:] == '.sbd':
-                          longfilename = os.path.join(root, filename)
-                          msnum = int(longfilename[-10:-4])
-
-                          # Check if message sequence number is in the dictionary
-                          # If it isn't then this must be a new sbd file so process it
-                          if self.sbd.has_key(msnum) == False:
-                              print 'Found new sbd file with MOMSN',msnum
-                              new_files = True
-                              self.sbd[msnum] = longfilename # Add new msn and filename to dictionary
-
-                              # Read the sbd file and unpack the data using numpy loadtxt
-                              gpstime,latitude,longitude,altitude,speed,heading,pressure,temperature,battery = \
-                                  np.loadtxt(longfilename, delimiter=',', unpack=True, \
-                                  usecols=(0,1,2,3,4,5,8,9,10), converters={0:mdates.strpdate2num('%Y%m%d%H%M%S')})
-
-                              pressure = int(round(pressure)) # Convert pressure to integer
-                              altitude = int(round(altitude)) # Convert altitude to integer
-                              time_str = mdates.num2date(gpstime).strftime('%H:%M:%S') # Construct time
-                              position_str = "{:.6f},{:.6f}".format(latitude, longitude) # Construct position
-                              # Update beacon path (append this location to the path)
-                              self.path += "|" + position_str
-                              
-                              # Update beacon time
-                              self.beacon_time.config(state='normal') # Unlock beacon_time
-                              self.beacon_time.delete(0, tk.END) # Delete old value
-                              self.beacon_time.insert(0, time_str) # Insert new time
-                              self.beacon_time.config(state='readonly') # Lock beacon_time
-                              # Update beacon location
-                              self.map_lat = latitude
-                              self.map_lon = longitude
-                              self.beacon_location.config(state='normal')
-                              self.beacon_location.delete(0, tk.END)
-                              self.beacon_location.insert(0, position_str)
-                              self.beacon_location.config(state='readonly')
-                              # Update beacon_altitude
-                              self.beacon_altitude.config(state='normal')
-                              self.beacon_altitude.delete(0, tk.END)
-                              self.beacon_altitude.insert(0, str(altitude))
-                              self.beacon_altitude.config(state='readonly')
-                              # Update beacon_speed
-                              self.beacon_speed.config(state='normal')
-                              self.beacon_speed.delete(0, tk.END)
-                              self.beacon_speed.insert(0, str(speed))
-                              self.beacon_speed.config(state='readonly')
-                              # Update beacon_heading
-                              self.beacon_heading.config(state='normal')
-                              self.beacon_heading.delete(0, tk.END)
-                              self.beacon_heading.insert(0, str(heading))
-                              self.beacon_heading.config(state='readonly')
-                              # Update beacon_pressure
-                              self.beacon_pressure.config(state='normal')
-                              self.beacon_pressure.delete(0, tk.END)
-                              self.beacon_pressure.insert(0, str(pressure))
-                              self.beacon_pressure.config(state='readonly')
-                              # Update beacon_temperature
-                              self.beacon_temperature.config(state='normal')
-                              self.beacon_temperature.delete(0, tk.END)
-                              self.beacon_temperature.insert(0, str(temperature))
-                              self.beacon_temperature.config(state='readonly')
-                              # Update beacon_voltage
-                              self.beacon_voltage.config(state='normal')
-                              self.beacon_voltage.delete(0, tk.END)
-                              self.beacon_voltage.insert(0, str(battery))
-                              self.beacon_voltage.config(state='readonly')
-      return new_files
+   def copy_location(self, imei):
+      ''' Copy the location of this imei to the clipboard '''
+      self.window.clipboard_clear() # Clear clipboard
+      loc = self.beacon_locations[self.beacon_imeis[imei]] # Get location
+      self.window.clipboard_append(loc) # Copy location to clipboard
+      self.window.update() # Update window
 
    def QUIT(self):
       ''' Quit the program '''
