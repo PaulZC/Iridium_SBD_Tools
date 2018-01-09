@@ -81,7 +81,7 @@ If you ever want to download all the SBD messages again, perhaps on a new comput
 
 ## Mapping the location and path with the Google Static Maps API
 
-[Iridium_9603N_Beacon_Mapper.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_9603N_Beacon_Mapper.py) uses the Google Static Maps API to display the beacon location and path.
+[Iridium_9603N_Beacon_Mapper.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_9603N_Beacon_Mapper.py) uses the Google Static Maps API to display beacon locations and paths.
 It will check once per minute for the appearance of a new .sbd file, parse it and display the data in a Python Tkinter GUI.
 
 You will need to download the [blank map image](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/map_image_blank.png) too. This is displayed until an sbd file is processed
@@ -101,14 +101,14 @@ and
 [18-01-01_01-00-01_123456789012345_000002.sbd](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/18-01-01_01-00-00_123456789012345_000001.sbd)
 . When the code asks if you want to ignore any existing sbd files, answer 'n' and the data in these files will be displayed.
 
-The displayed map is automatically centered on the beacon position, but the center position can be changed by left-clicking in the image.
+The displayed map is automatically centered on the position of a new beacon. The center position can be changed by left-clicking in the image.
 A right-click will copy that location (lat,lon) to the clipboard. The zoom level defaults to '15' but can be changed using the zoom buttons.
 
-The beacon's path is displayed as a red line on the map. The oldest waypoints may not be shown as the map URL is limited to 8192 characters.
+A pull-down menu lists the latest locations of all beacons being tracked. Click on the entry for a beacon to copy its location to the clipboard.
+
+The beacon's path is displayed as a coloured line on the map. The oldest waypoints may not be shown as the map URL is limited to 8192 characters.
 
 The GUI uses 640x480 pixel map images. Higher resolution images are available if you have a premium plan with Google.
-
-The GUI can currently only handle data from a single beacon. A future upgrade will be to add support for multiple beacons.
 
 ![Mapper.jpg](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/img/Mapper.jpg)
 
