@@ -9,8 +9,8 @@ A somewhat random collection of Python software tools to help Iridium SBD tracke
 This is a collection of Python software tools which I wrote to download, process, upload and visualise Short Burst Data messages from the [UBSEDS22I Iridium Tracker](https://github.com/PaulZC/Iridium_9603_Beacon/blob/master/Archive/V2/Iridium_9603_Beacon.pdf).
 
 If you purchase an Iridium 9603N module for your tracker project, your provider will offer you the option of receiving the data messages via email or a web service (HTTP).
-Personally I prefer email. So, here are a somewhat random collection of software tools which will automatically download the SBD data email attachments from GMail, parse them,
-display the tracker location and path using the Google Static Maps API, upload data to the [HabHub Habitat Tracker](https://tracker.habhub.org),
+Personally I find email easier to work with. So, here are a somewhat random collection of software tools which will automatically download the SBD data email attachments from GMail, parse them,
+display the tracker locations and paths using the Google Static Maps API, upload data to the [HabHub Habitat Tracker](https://tracker.habhub.org),
 forward the data to another email address (with a Google Static Maps API link) and visualise the path of your tracker via Google Earth KML files.
 
 ## Downloading the SBD emails and attachments
@@ -79,7 +79,7 @@ copied across allowing modify access.
 If you ever want to download all the SBD messages again, perhaps on a new computer, then
 [Iridium_SBD_GMail_API_GetAllSBD.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_SBD_GMail_API_GetAllSBD.py) will do just that.
 
-## Mapping the location and path with the Google Static Maps API
+## Mapping tracker locations and paths with the Google Static Maps API
 
 [Iridium_9603N_Beacon_Mapper.py](https://github.com/PaulZC/Iridium_SBD_Tools/blob/master/Iridium_9603N_Beacon_Mapper.py) uses the Google Static Maps API to display beacon locations and paths.
 It will check once per minute for the appearance of a new .sbd file, parse it and display the data in a Python Tkinter GUI.
@@ -104,7 +104,7 @@ and
 The displayed map is automatically centered on the position of a new beacon. The center position can be changed by left-clicking in the image.
 A right-click will copy that location (lat,lon) to the clipboard. The zoom level defaults to '15' but can be changed using the zoom buttons.
 
-A pull-down menu lists the latest locations of all beacons being tracked. Click on the entry for a beacon to copy its location to the clipboard.
+A pull-down menu lists the latest locations of all beacons being tracked. Click on the entry for a beacon to center the map on its location and copy its location to the clipboard.
 
 The beacon's path is displayed as a coloured line on the map. The oldest waypoints may not be shown as the map URL is limited to 8192 characters.
 

@@ -17,15 +17,19 @@
 ## The displayed map is automatically centered on a new beacon position.
 ## The center position can be changed by left-clicking in the image.
 ## A right-click will copy the click location (lat,lon) to the clipboard.
-## The zoom level is set automatically when a new beacon is displayed to show both beacon and base.
 ## The zoom can be changed using the buttons.
 
 ## Each beacon's path is displayed as a coloured line on the map.
 ## The oldest waypoints may be deleted as the map URL is limited to 8192 characters.
 
-## The GUI uses 640x480 pixel map images. Higher resolution images are available if you have a premium plan with Google.
+## A pull-down menu lists the locations of all the beacons being tracked.
+## Clicking on a menu entry will center the map on that location and will copy that location
+## to the clipboard.
 
-# sbd file contains:
+## The GUI uses 640x480 pixel map images. Higher resolution images are available
+## if you have a premium plan with Google.
+
+# sbd file contains the following in csv format:
 # Column 0 = GPS Tx Time (YYYYMMDDHHMMSS) (Start of 9603 Tx session)
 # Column 1 = GPS Latitude (degrees) (float)
 # Column 2 = GPS Longitude (degrees) (float)
@@ -38,6 +42,7 @@
 # Column 9 = Temperature (C) (float)
 # Column 10 = Battery (V) (float)
 # Column 11 = Iteration Count (int)
+# (Optional) Column 12 = The Beacon's RockBLOCK serial number (Iridium9603NBeacon_V4.ino)
 
 # Converters
 # 0:mdates.strpdate2num('%Y%m%d%H%M%S')
@@ -79,7 +84,8 @@ class BeaconMapper(object):
       self.beacon_imeis = {} # Dictionary of the serial numbers of the beacons currently being tracked
       self.beacon_paths = [] # List of beacon paths for Static Map
       self.beacon_locations = [] # List of current location for each beacon
-      self.beacon_colours = ['red','yellow','green','blue','purple','gray','brown','orange'] # Colours for beacon markers and paths
+      # Colours for beacon markers and paths - supported by both Tkinter and Google Static Maps API
+      self.beacon_colours = ['red','yellow','green','blue','purple','gray','brown','orange']
       self.sbd = [] # List of existing sbd filenames
       
       # Limit path lengths to this many characters depending on how many beacons are being tracked
@@ -600,6 +606,13 @@ class BeaconMapper(object):
       loc = self.beacon_locations[self.beacon_imeis[imei]] # Get location
       self.window.clipboard_append(loc) # Copy location to clipboard
       self.window.update() # Update window
+      try:
+         lat,lon = loc.split(',')
+         self.map_lat = float(lat)
+         self.map_lon = float(lon)
+         self.update_map()
+      except:
+         pass
 
    def QUIT(self):
       ''' Quit the program '''
